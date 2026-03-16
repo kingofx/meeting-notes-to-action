@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meeting to Action — Notion Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #FFFFFF;
+    --sidebar:   #F7F7F5;
+    --border:    #E9E9E7;
+    --ink:       #1A1A1A;
+    --gray1:     #787774;
+    --gray2:     #AEACA8;
+    --gray3:     #E9E9E7;
+    --cream:     #F7F6F3;
+    --accent:    #E8612A;
+    --accent-lt: #FFF0EB;
+    --green:     #0F7B6C;
+    --green-lt:  #EAF8F5;
+    --amber:     #B45309;
+    --amber-lt:  #FEF9EC;
+    --blue:      #2563EB;
+    --blue-lt:   #EFF6FF;
+    --red:       #DC2626;
+    --red-lt:    #FEF2F2;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,.08);
+    --shadow-md: 0 4px 16px rgba(0,0,0,.10), 0 2px 4px rgba(0,0,0,.06);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,.12), 0 2px 8px rgba(0,0,0,.06);
+    --r: 6px;
+    --font: 'Inter', -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+  }
+
+  html, body { height: 100%; font-family: var(--font); background: #ECEAE6; color: var(--ink); }
+
+  .chrome {
+    width: 100%; max-width: 1280px; margin: 0 auto;
+    height: 100vh; display: flex; flex-direction: column;
+    background: var(--bg); box-shadow: var(--shadow-lg); overflow: hidden;
+  }
+
+  .browser-bar {
+    height: 44px; background: #F2F1EE; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px; padding: 0 16px; flex-shrink: 0;
+  }
+  .browser-dots { display: flex; gap: 6px; }
+  .browser-dots span { width: 12px; height: 12px; border-radius: 50%; }
+  .browser-dots span:nth-child(1) { background: #FF5F57; }
+  .browser-dots span:nth-child(2) { background: #FFBD2E; }
+  .browser-dots span:nth-child(3) { background: #28C840; }
+  .browser-url {
+    flex: 1; max-width: 480px; height: 26px; background: var(--bg);
+    border: 1px solid var(--border); border-radius: 5px;
+    display: flex; align-items: center; padding: 0 10px;
+    font-size: 12px; color: var(--gray1); font-family: var(--mono); margin: 0 auto;
+  }
+
+  .notion-app { display: flex; flex: 1; overflow: hidden; }
+
+  .sidebar {
+    width: 220px; flex-shrink: 0; background: var(--sidebar);
+    border-right: 1px solid var(--border); padding: 12px 8px;
+    display: flex; flex-direction: column; gap: 2px; overflow-y: auto;
+  }
+  .sidebar-header { display: flex; align-items: center; gap: 8px; padding: 6px 8px; margin-bottom: 4px; }
+  .workspace-icon {
+    width: 24px; height: 24px; border-radius: 5px;
+    background: var(--ink); color: white; font-size: 13px;
+    display: flex; align-items: center; justify-content: center; font-weight: 600;
+  }
+  .workspace-name { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+  .sidebar-section { font-size: 11px; color: var(--gray2); font-weight: 600; letter-spacing: .06em; padding: 10px 8px 4px; text-transform: uppercase; }
+  .sidebar-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 5px 8px; border-radius: 4px; cursor: pointer;
+    font-size: 13.5px; color: var(--gray1); transition: background .1s;
+  }
+  .sidebar-item:hover { background: rgba(0,0,0,.05); }
+  .sidebar-item.active { background: rgba(0,0,0,.06); color: var(--ink); font-weight: 500; }
+
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+
+  .toolbar {
+    height: 44px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 20px; flex-shrink: 0; gap: 10px;
+  }
+  .toolbar-left { display: flex; align-items: center; gap: 6px; }
+  .toolbar-right { display: flex; align-items: center; gap: 8px; }
+
+  .toolbar-btn {
+    height: 28px; padding: 0 10px; border-radius: 5px;
+    border: 1px solid var(--border); background: var(--bg);
+    font-size: 12.5px; color: var(--gray1); cursor: pointer;
+    display: flex; align-items: center; gap: 5px;
+    font-family: var(--font); transition: all .15s;
+  }
+  .toolbar-btn:hover { background: var(--cream); }
+
+  .btn-generate {
+    height: 32px; padding: 0 14px; border-radius: 6px;
+    background: var(--accent); border: none; color: white;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; gap: 7px;
+    font-family: var(--font); transition: all .2s;
+    box-shadow: 0 1px 4px rgba(232,97,42,.35);
+  }
+  .btn-generate:hover:not(:disabled) { background: #D4541F; transform: translateY(-1px); box-shadow: 0 3px 10px rgba(232,97,42,.4); }
+  .btn-generate:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+
+  .breadcrumb { font-size: 12.5px; color: var(--gray2); display: flex; align-items: center; gap: 4px; }
+  .breadcrumb span { color: var(--gray1); }
+
+  .screen { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+  .screen.active { display: flex; }
+
+  .editor-wrap { flex: 1; overflow-y: auto; padding: 40px 88px 80px; }
+
+  .page-icon-row { font-size: 52px; margin-bottom: 10px; line-height: 1; }
+
+  .page-title-input {
+    font-size: 34px; font-weight: 700; color: var(--ink);
+    border: none; outline: none; width: 100%; background: transparent;
+    margin-bottom: 8px; letter-spacing: -.02em; font-family: var(--font);
+    line-height: 1.2;
+  }
+  .page-title-input::placeholder { color: var(--gray3); }
+
+  .page-meta-row {
+    display: flex; gap: 16px; margin-bottom: 20px; font-size: 13px; color: var(--gray2);
+  }
+  .meta-field {
+    display: flex; align-items: center; gap: 5px; cursor: pointer; padding: 3px 6px;
+    border-radius: 4px; transition: background .1s;
+  }
+  .meta-field:hover { background: var(--cream); color: var(--gray1); }
+  .meta-input {
+    border: none; outline: none; background: transparent; font-size: 13px;
+    color: var(--gray2); font-family: var(--font); width: 160px; cursor: pointer;
+  }
+  .meta-input:focus { color: var(--ink); }
+
+  .divider { border: none; border-top: 1px solid var(--border); margin: 16px 0 20px; }
+
+  .notes-label { font-size: 11px; font-weight: 600; color: var(--gray2); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 10px; }
+
+  .notes-editor {
+    width: 100%; min-height: 320px; border: 1.5px solid var(--border);
+    border-radius: 8px; padding: 18px 20px; font-size: 14.5px;
+    font-family: var(--font); color: var(--ink); line-height: 1.75;
+    background: var(--bg); outline: none; resize: none;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .notes-editor:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(232,97,42,.1); }
+  .notes-editor::placeholder { color: var(--gray2); }
+
+  .editor-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 10px; font-size: 12.5px; color: var(--gray2);
+  }
+  .char-count { font-family: var(--mono); }
+  .hint-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--gray1); background: var(--accent-lt);
+    border: 1px solid rgba(232,97,42,.25); padding: 4px 12px; border-radius: 99px;
+    animation: hintPulse 2.5s ease-in-out infinite;
+  }
+  @keyframes hintPulse { 0%,100% { opacity:.7; } 50% { opacity:1; } }
+
+  .processing-overlay {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    background: rgba(255,255,255,.97); backdrop-filter: blur(4px);
+  }
+  .processing-card {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 14px;
+    padding: 40px 48px; text-align: center; box-shadow: var(--shadow-lg);
+    max-width: 420px; width: 90%;
+  }
+  .processing-icon { font-size: 44px; margin-bottom: 16px; animation: brainPulse 1.4s ease-in-out infinite; }
+  @keyframes brainPulse { 0%,100% { transform: scale(1) rotate(0deg); } 50% { transform: scale(1.1) rotate(-3deg); } }
+  .processing-title { font-size: 20px; font-weight: 600; color: var(--ink); margin-bottom: 8px; }
+  .processing-sub { font-size: 14px; color: var(--gray1); margin-bottom: 24px; line-height: 1.55; }
+
+  .progress-bar { width: 100%; height: 4px; background: var(--gray3); border-radius: 99px; overflow: hidden; margin-bottom: 20px; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), #FF8A57); border-radius: 99px; width: 0%; transition: width .4s ease; }
+
+  .p-steps { display: flex; flex-direction: column; gap: 8px; }
+  .p-step {
+    display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+    border-radius: 6px; background: var(--cream); font-size: 13px; color: var(--gray1);
+    opacity: 0; transform: translateY(5px); transition: all .3s ease; text-align: left;
+  }
+  .p-step.show { opacity: 1; transform: translateY(0); }
+  .p-step.done { background: var(--green-lt); color: var(--green); }
+  .p-step.error-step { background: var(--red-lt); color: var(--red); }
+  .step-icon { width: 18px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+  .spinner { width: 14px; height: 14px; border: 2px solid var(--gray3); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .output-banner {
+    background: var(--green-lt); border-bottom: 1px solid #A7DDD8;
+    padding: 9px 20px; display: flex; align-items: center; justify-content: space-between;
+    font-size: 13px; color: var(--green); font-weight: 500; flex-shrink: 0;
+  }
+  .output-banner-left { display: flex; align-items: center; gap: 8px; }
+  .output-page { flex: 1; overflow-y: auto; padding: 32px 88px 80px; }
+
+  .ai-block {
+    border: 1.5px solid var(--border); border-radius: 10px;
+    margin-bottom: 20px; overflow: hidden; box-shadow: var(--shadow-sm);
+    opacity: 0; transform: translateY(10px);
+    animation: slideIn .4s ease forwards;
+  }
+  .ai-block:nth-child(1) { animation-delay: .05s; }
+  .ai-block:nth-child(2) { animation-delay: .2s; }
+  .ai-block:nth-child(3) { animation-delay: .35s; }
+  @keyframes slideIn { to { opacity:1; transform: translateY(0); } }
+
+  .ai-block-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 11px 16px; background: var(--cream); border-bottom: 1px solid var(--border);
+  }
+  .ai-block-title { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 600; color: var(--ink); }
+  .ai-badge { font-size: 10px; font-weight: 600; letter-spacing: .05em; background: var(--accent); color: white; padding: 2px 7px; border-radius: 99px; }
+  .ai-block-actions { display: flex; gap: 6px; }
+  .ai-action-btn {
+    height: 26px; padding: 0 10px; border-radius: 4px; border: 1px solid var(--border);
+    background: var(--bg); font-size: 12px; color: var(--gray1); cursor: pointer;
+    font-family: var(--font); transition: all .15s; display: flex; align-items: center; gap: 4px;
+  }
+  .ai-action-btn:hover { background: var(--cream); color: var(--ink); }
+  .ai-action-btn.primary { background: var(--ink); color: white; border-color: var(--ink); }
+  .ai-action-btn.primary:hover { background: #333; }
+  .ai-block-body { padding: 18px 20px; }
+
+  .s-section-label { font-size: 11px; font-weight: 600; color: var(--gray2); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; display: block; }
+
+  .decision-item, .blocker-item, .context-item {
+    display: flex; align-items: flex-start; gap: 9px;
+    padding: 8px 12px; border-radius: 6px; margin-bottom: 5px;
+    font-size: 14px; color: var(--ink); line-height: 1.55;
+  }
+  .decision-item { background: var(--bg); border: 1px solid var(--border); }
+  .blocker-item  { background: var(--amber-lt); border: 1px solid #FDE68A; }
+  .context-item  { background: var(--cream); border: 1px solid var(--border); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+  .dot-accent { background: var(--accent); }
+  .dot-amber  { background: var(--amber); }
+  .dot-gray   { background: var(--gray2); }
+
+  .task-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 12px 0; border-bottom: 1px solid var(--gray3);
+  }
+  .task-item:last-child { border-bottom: none; }
+  .task-check {
+    width: 18px; height: 18px; border-radius: 4px;
+    border: 1.5px solid var(--gray2); flex-shrink: 0; margin-top: 2px;
+    cursor: pointer; transition: all .15s;
+    display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700;
+  }
+  .task-check:hover { border-color: var(--accent); background: var(--accent-lt); }
+  .task-check.checked { background: var(--green); border-color: var(--green); color: white; }
+  .task-main { flex: 1; min-width: 0; }
+  .task-name { font-size: 14.5px; color: var(--ink); font-weight: 500; margin-bottom: 5px; line-height: 1.4; }
+  .task-name.done { text-decoration: line-through; color: var(--gray2); }
+  .task-meta { display: flex; gap: 7px; flex-wrap: wrap; }
+  .tag {
+    font-size: 12px; padding: 2px 9px; border-radius: 99px;
+    display: flex; align-items: center; gap: 4px; font-weight: 500; white-space: nowrap;
+  }
+  .tag-owner { background: var(--blue-lt); color: var(--blue); }
+  .tag-due   { background: var(--cream); color: var(--gray1); border: 1px solid var(--border); }
+  .tag-conf  { background: var(--amber-lt); color: var(--amber); border: 1px solid #FDE68A; font-size: 11px; }
+  .task-edit-btn { font-size: 12px; color: var(--gray2); cursor: pointer; padding: 2px 6px; border-radius: 3px; transition: all .15s; white-space: nowrap; flex-shrink: 0; }
+  .task-edit-btn:hover { color: var(--ink); background: var(--cream); }
+
+  .toggle-bar { display: flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; width: fit-content; margin-bottom: 14px; }
+  .tog { padding: 6px 16px; font-size: 13px; font-family: var(--font); cursor: pointer; border: none; background: var(--bg); color: var(--gray1); transition: all .15s; font-weight: 500; }
+  .tog.on { background: var(--ink); color: white; }
+
+  .followup-body { background: var(--cream); border-radius: 8px; padding: 18px 20px; font-size: 14px; color: var(--ink); line-height: 1.8; }
+  .f-label { font-size: 11px; font-weight: 600; color: var(--gray2); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 5px; }
+  .f-section { margin-bottom: 14px; }
+  .f-section:last-child { margin-bottom: 0; }
+
+  .out-page-title { font-size: 32px; font-weight: 700; color: var(--ink); margin-bottom: 6px; letter-spacing: -.02em; }
+  .out-page-meta { font-size: 13px; color: var(--gray2); margin-bottom: 24px; display: flex; gap: 16px; }
+
+  .toast {
+    position: fixed; top: 60px; right: 20px; z-index: 999;
+    background: var(--ink); color: white; padding: 10px 18px;
+    border-radius: 8px; font-size: 13.5px; font-weight: 500;
+    box-shadow: var(--shadow-lg); display: flex; align-items: center; gap: 8px;
+    opacity: 0; transform: translateY(-8px); transition: all .25s; pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  .nav-dots { position: fixed; bottom: 22px; right: 28px; display: flex; gap: 8px; z-index: 200; }
+  .nav-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gray2); cursor: pointer; transition: all .2s; }
+  .nav-dot.on { background: var(--accent); transform: scale(1.35); }
+  .screen-lbl {
+    position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+    font-size: 12px; color: var(--gray2); background: var(--bg);
+    padding: 4px 14px; border-radius: 99px; border: 1px solid var(--border);
+    z-index: 200; pointer-events: none; font-family: var(--mono);
+  }
+
+  .error-banner {
+    background: var(--red-lt); border: 1px solid #FECACA; border-radius: 8px;
+    padding: 14px 18px; margin-bottom: 20px; font-size: 14px; color: var(--red);
+    display: flex; align-items: flex-start; gap: 10px;
+  }
+  .error-banner strong { font-weight: 600; display: block; margin-bottom: 4px; }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-thumb { background: var(--gray3); border-radius: 99px; }
+</style>
+</head>
+<body>
+
+<div class="chrome">
+  <div class="browser-bar">
+    <div class="browser-dots"><span></span><span></span><span></span></div>
+    <div class="browser-url">🔒 notion.so / meeting-to-action · prototype</div>
+  </div>
+
+  <div class="notion-app">
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <div class="workspace-icon">N</div>
+        <div class="workspace-name">My Workspace</div>
+      </div>
+      <div class="sidebar-item">🔍 Search</div>
+      <div class="sidebar-item">🏠 Home</div>
+      <div class="sidebar-item">📥 Inbox</div>
+      <div class="sidebar-section">Pages</div>
+      <div class="sidebar-item active">📝 New Meeting</div>
+      <div class="sidebar-item">📄 Project Roadmap</div>
+      <div class="sidebar-item">✅ My Tasks</div>
+      <div class="sidebar-item">📅 Calendar</div>
+      <div class="sidebar-section">Recent</div>
+      <div class="sidebar-item">📄 Sprint Planning</div>
+      <div class="sidebar-item">📄 Design Review</div>
+      <div class="sidebar-item">📄 Stakeholder Sync</div>
+    </div>
+
+    <div class="main">
+
+      <!-- SCREEN 1: Editor -->
+      <div class="screen active" id="s1">
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <div class="breadcrumb">Meetings <span>/</span> <span id="titleCrumb">New Meeting</span></div>
+          </div>
+          <div class="toolbar-right">
+            <button class="toolbar-btn">Share</button>
+            <button class="toolbar-btn">⋯</button>
+            <button class="btn-generate" id="generateBtn" onclick="handleGenerate()">
+              ⚡ Meeting to Action
+            </button>
+          </div>
+        </div>
+
+        <div class="editor-wrap">
+          <div class="page-icon-row">📝</div>
+          <input
+            class="page-title-input"
+            id="pageTitle"
+            placeholder="Meeting title…"
+            value=""
+            oninput="document.getElementById('titleCrumb').textContent = this.value || 'New Meeting'"
+          />
+          <div class="page-meta-row">
+            <div class="meta-field">📅 <input class="meta-input" id="metaDate" placeholder="Date" /></div>
+            <div class="meta-field">👥 <input class="meta-input" id="metaAttendees" placeholder="Attendees" /></div>
+          </div>
+          <hr class="divider">
+          <div class="notes-label">Meeting Notes</div>
+          <textarea
+            class="notes-editor"
+            id="notesInput"
+            placeholder="Paste or type your meeting notes here…
+
+Tips for better results:
+- Mention names when assigning work (e.g. 'Ada will review by Thursday')
+- Note decisions explicitly (e.g. 'We agreed to…')
+- Include any blockers or open questions
+- Add dates or deadlines where relevant"
+            oninput="updateCharCount()"
+          ></textarea>
+          <div class="editor-footer">
+            <div class="char-count" id="charCount">0 characters</div>
+            <div class="hint-pill">⚡ Click 'Meeting to Action' to generate output</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCREEN 2: Processing -->
+      <div class="screen" id="s2">
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <div class="breadcrumb">Meetings <span>/</span> <span id="titleCrumb2">Meeting</span></div>
+          </div>
+          <div class="toolbar-right">
+            <button class="btn-generate" disabled>⚡ Generating…</button>
+          </div>
+        </div>
+        <div class="processing-overlay">
+          <div class="processing-card">
+            <div class="processing-icon">🧠</div>
+            <div class="processing-title">Analysing your meeting</div>
+            <div class="processing-sub">Reading your notes and extracting structure…</div>
+            <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+            <div class="p-steps">
+              <div class="p-step" id="ps1"><div class="step-icon">⏳</div> Reading page content</div>
+              <div class="p-step" id="ps2"><div class="step-icon">⏳</div> Detecting decisions &amp; blockers</div>
+              <div class="p-step" id="ps3"><div class="step-icon">⏳</div> Extracting action items &amp; owners</div>
+              <div class="p-step" id="ps4"><div class="step-icon">⏳</div> Drafting follow-up message</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCREEN 3: Output -->
+      <div class="screen" id="s3">
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <div class="breadcrumb">Meetings <span>/</span> <span id="titleCrumb3">Meeting</span></div>
+          </div>
+          <div class="toolbar-right">
+            <button class="toolbar-btn" onclick="resetToEditor()">← Edit notes</button>
+            <button class="toolbar-btn">Share</button>
+            <button class="btn-generate" style="background:var(--green);" disabled>✓ Generated</button>
+          </div>
+        </div>
+
+        <div class="output-banner" id="outputBanner">
+          <div class="output-banner-left">
+            <span>✅</span>
+            <span id="outputSummaryLine">Meeting to Action complete.</span>
+          </div>
+          <button class="ai-action-btn" onclick="this.closest('.output-banner').style.display='none'">Dismiss</button>
+        </div>
+
+        <div class="output-page" id="outputPage"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="nav-dots">
+  <div class="nav-dot on" id="dot1" onclick="if(currentScreen!==1) resetToEditor()"></div>
+  <div class="nav-dot" id="dot2"></div>
+  <div class="nav-dot" id="dot3"></div>
+</div>
+<div class="screen-lbl" id="screenLbl">Screen 1 — Enter Notes</div>
+<div class="toast" id="toast"></div>
+
+<script>
+let currentScreen = 1;
+let aiOutput = null;
+
+const SCREEN_LABELS = {
+  1: 'Screen 1 — Enter Notes',
+  2: 'Screen 2 — AI Processing',
+  3: 'Screen 3 — Review & Confirm'
+};
+
+function goScreen(n) {
+  [1,2,3].forEach(i => {
+    document.getElementById('s'+i).classList.toggle('active', i===n);
+    document.getElementById('dot'+i).classList.toggle('on', i===n);
+  });
+  document.getElementById('screenLbl').textContent = SCREEN_LABELS[n];
+  currentScreen = n;
+}
+
+function resetToEditor() { goScreen(1); }
+
+function updateCharCount() {
+  const n = document.getElementById('notesInput').value.length;
+  document.getElementById('charCount').textContent = n.toLocaleString() + ' character' + (n===1?'':'s');
+}
+
+async function handleGenerate() {
+  const title     = document.getElementById('pageTitle').value.trim() || 'Untitled Meeting';
+  const notes     = document.getElementById('notesInput').value.trim();
+  const date      = document.getElementById('metaDate').value.trim();
+  const attendees = document.getElementById('metaAttendees').value.trim();
+
+  if (notes.length < 30) {
+    showToast('⚠️ Please add some meeting notes first');
+    document.getElementById('notesInput').focus();
+    return;
+  }
+
+  ['2','3'].forEach(i => {
+    document.getElementById('titleCrumb'+i).textContent = title;
+  });
+
+  goScreen(2);
+  animateProcessing();
+
+  try {
+    const result = await callAI(notes, title, date, attendees);
+    aiOutput = result;
+    renderOutput(result, title, date, attendees);
+    goScreen(3);
+  } catch (err) {
+    renderError(err.message);
+    goScreen(3);
+  }
+}
+
+function animateProcessing() {
+  const fill  = document.getElementById('progressFill');
+  const steps = ['ps1','ps2','ps3','ps4'];
+  const times = [0, 600, 1400, 2200];
+  const dones = [500, 1200, 2000, 3200];
+
+  fill.style.width = '0%';
+  steps.forEach(id => {
+    const el = document.getElementById(id);
+    el.classList.remove('show','done','error-step');
+    el.querySelector('.step-icon').textContent = '⏳';
+  });
+
+  steps.forEach((id, i) => {
+    setTimeout(() => {
+      const el = document.getElementById(id);
+      el.classList.add('show');
+      el.querySelector('.step-icon').innerHTML = '<div class="spinner"></div>';
+      fill.style.width = (20 + i * 20) + '%';
+    }, times[i]);
+    setTimeout(() => {
+      const el = document.getElementById(id);
+      el.classList.add('done');
+      el.querySelector('.step-icon').textContent = '✓';
+      fill.style.width = (40 + i * 15) + '%';
+    }, dones[i]);
+  });
+}
+
+async function callAI(notes, title, date, attendees) {
+  const systemPrompt = `You are Meeting to Action, an AI assistant inside Notion that converts raw meeting notes into structured, actionable output.
+
+Return a JSON object with exactly this shape:
+
+{
+  "summary": {
+    "decisions": ["string", ...],
+    "blockers":  ["string", ...],
+    "context":   ["string", ...]
+  },
+  "tasks": [
+    {
+      "name":     "string — action item starting with a verb",
+      "owner":    "string — person's name, or 'Unassigned'",
+      "due":      "string — e.g. 'Thu 13 Mar EOD' or ''",
+      "inferred": true/false
+    }
+  ],
+  "followup": {
+    "email": { "subject": "string", "body": "string — use \\n for line breaks" },
+    "slack": { "body": "string — use \\n for line breaks" }
+  },
+  "stats": {
+    "taskCount": number,
+    "decisionCount": number,
+    "blockerCount": number
+  }
+}
+
+Rules:
+- Extract only what is in the notes. Do not invent.
+- Tasks start with a verb. Owner is named person or "Unassigned".
+- Decisions = things agreed. Blockers = things preventing progress. Context = useful background.
+- Max 20 words per summary item. Email ~120 words. Slack ~80 words.
+- Return ONLY valid JSON. No markdown, no preamble.`;
+
+  const userPrompt = `Meeting title: ${title}
+Date: ${date || 'Not specified'}
+Attendees: ${attendees || 'Not specified'}
+
+Notes:
+---
+${notes}
+---
+
+Extract structured output as JSON.`;
+
+  const response = await fetch('/api/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1800,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userPrompt }]
+    })
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `API error ${response.status}`);
+  }
+
+  const data = await response.json();
+  const raw = data.content?.[0]?.text || '';
+  const cleaned = raw.replace(/```json\n?/g,'').replace(/```\n?/g,'').trim();
+
+  try {
+    return JSON.parse(cleaned);
+  } catch(e) {
+    throw new Error('Could not parse AI response. Please try again.');
+  }
+}
+
+function renderOutput(data, title, date, attendees) {
+  const page = document.getElementById('outputPage');
+  const stats = data.stats || {};
+  const taskCount = stats.taskCount || (data.tasks||[]).length;
+  const decCount  = stats.decisionCount || (data.summary?.decisions||[]).length;
+
+  document.getElementById('outputSummaryLine').textContent =
+    `Meeting to Action generated ${taskCount} action item${taskCount!==1?'s':''}, ${decCount} decision${decCount!==1?'s':''}, and a follow-up draft.`;
+
+  const tasks = (data.tasks || []).map((t,i) => `
+    <div class="task-item">
+      <div class="task-check" id="check-${i}" onclick="toggleTask(${i})"></div>
+      <div class="task-main">
+        <div class="task-name" id="taskname-${i}">${esc(t.name)}</div>
+        <div class="task-meta">
+          <span class="tag tag-owner">👤 ${esc(t.owner || 'Unassigned')}</span>
+          ${t.due ? `<span class="tag tag-due">📅 ${esc(t.due)}</span>` : ''}
+          ${t.inferred ? `<span class="tag tag-conf">⚠ Due date inferred</span>` : ''}
+        </div>
+      </div>
+      <div class="task-edit-btn" onclick="showToast('✏️ Editing task…')">Edit</div>
+    </div>`).join('');
+
+  const decisions = (data.summary?.decisions || []).map(d =>
+    `<div class="decision-item"><div class="dot dot-accent"></div>${esc(d)}</div>`).join('');
+  const blockers = (data.summary?.blockers || []).map(b =>
+    `<div class="blocker-item"><div class="dot dot-amber"></div>${esc(b)}</div>`).join('');
+  const context = (data.summary?.context || []).map(c =>
+    `<div class="context-item"><div class="dot dot-gray"></div>${esc(c)}</div>`).join('');
+
+  const emailBody = (data.followup?.email?.body || '').replace(/\n/g, '<br>');
+  const emailSubj = data.followup?.email?.subject || '';
+  const slackBody = (data.followup?.slack?.body  || '').replace(/\n/g, '<br>');
+
+  page.innerHTML = `
+    <div style="margin-bottom:6px;font-size:52px;line-height:1;">📝</div>
+    <div class="out-page-title">${esc(title)}</div>
+    <div class="out-page-meta">
+      ${date ? `<span>📅 ${esc(date)}</span>` : ''}
+      ${attendees ? `<span>👥 ${esc(attendees)}</span>` : ''}
+    </div>
+
+    <div class="ai-block">
+      <div class="ai-block-header">
+        <div class="ai-block-title">📋 Meeting Summary <span class="ai-badge">AI</span></div>
+        <div class="ai-block-actions">
+          <button class="ai-action-btn" onclick="showToast('✏️ Editing summary…')">Edit</button>
+          <button class="ai-action-btn primary" onclick="showToast('✓ Summary saved')">Accept</button>
+        </div>
+      </div>
+      <div class="ai-block-body">
+        ${decisions ? `<span class="s-section-label">Key Decisions</span>${decisions}` : ''}
+        ${blockers  ? `<div style="margin-top:14px"><span class="s-section-label">Blockers</span>${blockers}</div>` : ''}
+        ${context   ? `<div style="margin-top:14px"><span class="s-section-label">Context</span>${context}</div>` : ''}
+        ${!decisions && !blockers && !context ? '<div style="color:var(--gray2);font-size:14px">No clear decisions or blockers detected.</div>' : ''}
+      </div>
+    </div>
+
+    <div class="ai-block">
+      <div class="ai-block-header">
+        <div class="ai-block-title">✅ Action Items <span class="ai-badge">AI</span></div>
+        <div class="ai-block-actions">
+          <button class="ai-action-btn primary" onclick="showToast('✓ ${taskCount} task${taskCount!==1?'s':''} created in Notion')">Create all tasks</button>
+        </div>
+      </div>
+      <div class="ai-block-body">
+        ${tasks || '<div style="color:var(--gray2);font-size:14px">No clear action items detected.</div>'}
+      </div>
+    </div>
+
+    <div class="ai-block">
+      <div class="ai-block-header">
+        <div class="ai-block-title">✉️ Follow-up Draft <span class="ai-badge">AI</span></div>
+        <div class="ai-block-actions">
+          <button class="ai-action-btn" onclick="copyFollowup()">Copy</button>
+        </div>
+      </div>
+      <div class="ai-block-body">
+        <div class="toggle-bar">
+          <button class="tog on" id="togEmail" onclick="switchFmt('email')">Email</button>
+          <button class="tog" id="togSlack" onclick="switchFmt('slack')">Slack</button>
+        </div>
+        <div class="followup-body" id="fmtEmail">
+          ${emailSubj ? `<div class="f-section"><div class="f-label">Subject</div><strong>${esc(emailSubj)}</strong></div>` : ''}
+          <div class="f-section">${emailBody}</div>
+        </div>
+        <div class="followup-body" id="fmtSlack" style="display:none">${slackBody}</div>
+      </div>
+    </div>
+  `;
+}
+
+function renderError(msg) {
+  document.getElementById('outputBanner').style.display = 'none';
+  document.getElementById('outputPage').innerHTML = `
+    <div class="error-banner">
+      <span>⚠️</span>
+      <div>
+        <strong>Generation failed</strong>
+        ${esc(msg)}<br><br>
+        <button class="ai-action-btn" onclick="resetToEditor()">← Go back and try again</button>
+      </div>
+    </div>`;
+}
+
+function toggleTask(i) {
+  const check = document.getElementById('check-'+i);
+  const name  = document.getElementById('taskname-'+i);
+  const done  = check.classList.toggle('checked');
+  check.textContent = done ? '✓' : '';
+  name.classList.toggle('done', done);
+  if (done) showToast('✅ Task marked complete');
+}
+
+function switchFmt(fmt) {
+  document.getElementById('togEmail').classList.toggle('on', fmt==='email');
+  document.getElementById('togSlack').classList.toggle('on', fmt==='slack');
+  document.getElementById('fmtEmail').style.display = fmt==='email' ? '' : 'none';
+  document.getElementById('fmtSlack').style.display = fmt==='slack' ? '' : 'none';
+}
+
+function copyFollowup() {
+  const emailOn = document.getElementById('togEmail')?.classList.contains('on');
+  showToast('📋 ' + (emailOn ? 'Email' : 'Slack') + ' draft copied to clipboard');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+function esc(str) {
+  return String(str||'')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.metaKey && currentScreen === 1) handleGenerate();
+});
+</script>
+</body>
+</html>
